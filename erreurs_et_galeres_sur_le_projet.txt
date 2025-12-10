@@ -1,0 +1,3 @@
+whisper repete des phrases en boucle quand il y a du silence...
+pourquoi: "However, because the models are trained in a weakly supervised manner using large-scale noisy data, the predictions may include texts that are not actually spoken in the audio input (i.e. hallucination). We hypothesize that this happens because, given their general knowledge of language, the models combine trying to predict the next word in audio with trying to transcribe the audio itself."
+fix: 

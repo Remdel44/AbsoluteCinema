@@ -1,9 +1,11 @@
-import ffmpeg
-def get_duration_ffmpeg(file_path):
-   probe = ffmpeg.probe(file_path)
-   stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'audio'), None)
-   duration = float(stream['duration'])
-   return duration
-file_path = 'input_audios\Kill_Bill_Volume_2_eng.ac3'
-duration = get_duration_ffmpeg(file_path)
-print(f"Duration: {duration:.2f} seconds")
+import torch
+
+# Affichera le numéro de version CUDA, et non plus None
+print(f"Version CUDA de PyTorch : {torch.version.cuda}")
+
+# Teste si PyTorch détecte votre GPU
+print(f"GPU disponible : {torch.cuda.is_available()}")
+
+# Affiche le nom de votre GPU
+if torch.cuda.is_available():
+    print(f"Nom du GPU : {torch.cuda.get_device_name(0)}")
