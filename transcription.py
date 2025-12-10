@@ -1,4 +1,6 @@
-import whisper, re, subprocess, os, time, torch
+import whisper, re, subprocess, os, time, torch, numpy
+from whisper.utils import format_timestamp # Fonction de formatage des timestamps
+
 
 GT_SUBS_PATH_RAW = "ground_truth_subs/raw/"
 GT_SUBS_PATH_CLEAN = "ground_truth_subs/cleaned/"
@@ -94,7 +96,7 @@ def extract_eng_track(video_path, audio_dir="input_audios"):
             video_path
         ]
         # Subprocess pour exécuter la commande et capturer la sortie
-        print(video_path)
+        print("Chemin du film: ", video_path)
         result = subprocess.run(ffprobe_cmd, capture_output=True, text=True, check=True)
         streams_data = result.stdout
 
@@ -197,11 +199,13 @@ def whisper_transcript(input_audio, audio_duration):
         str: Le texte complet
     """
     # Faire tourner whisper sur GPU car c'est long..
-    if torch.cuda.is_available():
-        device = "cuda"
-    else:
-        device = "cpu"
- 
+    # if torch.cuda.is_available():
+    #     device = "cuda"
+    # else:
+    #     device = "cpu"
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     print("Whisper will run on: ", device)
     # Modèle turbo: Bon pour transcription anglais-anglais
     model = whisper.load_model("turbo", device=device)
@@ -219,6 +223,9 @@ def whisper_transcript(input_audio, audio_duration):
 
     # Créer le dossier de splits s'il n'existe pas
     os.makedirs(output_splits_path, exist_ok=True)
+
+    #Créer le dossier de sortie des transcriptions s'il n'existe pas
+    os.makedirs(TRANSCRIPTS_PATH + TEST_MOVIE, exist_ok=True)
     try:
         split_cmd = [
                 'ffmpeg', 
@@ -235,7 +242,7 @@ def whisper_transcript(input_audio, audio_duration):
     dialogues = []
     # Transcription avec verbose=True pour suivre la progression
     for idx, audio_split in enumerate(os.listdir(output_splits_path)):
-        print("Transcription du segment :", audio_split)
+        print(f"\n\n{'-'*20} Transcription du segment :", audio_split)
         split_dialogue = transcript_audio_split(model, output_splits_path + audio_split, idx)
         dialogues.append(split_dialogue)
     dialogues = '\n'.join(dialogues)
@@ -269,25 +276,43 @@ def transcript_audio_split(model, split_path, idx):
         split_path: Chemin vers le segment audio.
     
     Returns:
-        str: Transcription du split audio.
+        str: Transcription avec horodatage du split audio.
     """
     
     try:
-        print(f"\nTranscription du segment : {split_path}")
-        result = model.transcribe(str(split_path), fp16=False, verbose=True )
-        dialogues = result["text"]
+        result = model.transcribe(
+            str(split_path), 
+            fp16=False, # Format float16 forcé pour éviter des warnings
+            verbose=True, # Afficher la progression
+            no_speech_threshold=0.3, #Seuil de probabilité de silence baissé (défaut 0.6)
+            logprob_threshold = -0.8, # Seuil augmenté pour filtrer les segments peu fiables (défaut -1.0)
+            # hallucination_silence_threshold=0.6 
+        )
         
-        #Save dans un .txt temporaire au cas où
-
-        temp_txt_path = 'transcripted_subs' + TEST_MOVIE + f'/audio_split_{idx}.txt'
-        with open(temp_txt_path, 'w', encoding='utf-8') as f:
-            f.write(dialogues)
-        print(f"Transcription du segment sauvegardée vers '{temp_txt_path}'")
-        return dialogues
-
     except Exception as e:
         print(f"Erreur lors de la transcription du segment {split_path}: \n{e}")
         return None
+    
+    # Extraire texte et horodatages
+    # dialogues = result["text"]
+    segments = result["segments"] 
+    transcript = []
+
+    for segment in segments:
+        start_time_seconds = segment["start"] + idx * 300  # Ajouter 5 minutes par segment précedent
+        end_time_seconds = segment["end"] + idx * 300      
+        text = segment["text"]
+        
+        # Conversion timestamp en HH:MM:SS.ms
+        start_formatted = format_timestamp(start_time_seconds, always_include_hours=True, decimal_marker=',')
+        end_formatted = format_timestamp(end_time_seconds, always_include_hours=True, decimal_marker=',')
+        
+        # Ajout à la liste
+        transcript.append(f"[{start_formatted} --> {end_formatted}] {text.strip()}")
+
+    transcript_final = '\n'.join(transcript)
+    return transcript_final
+
 
 
 
@@ -299,31 +324,4 @@ audio_duration = get_audio_duration(test_audio_path)
 
 transcription = whisper_transcript(test_audio_path, audio_duration)
 if transcription:
-    print("\n--- Transcription Finale (500 premiers caractères) ---")
-    print(transcription[:500])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# # Whisper coupe les audios longs en segments de 30s.
-# def transcript_audio(input_audio):
-#     # Whisper-turbo: transcription english-to-english 
-#     model = whisper.load_model("turbo")
-#     result = model.transcribe(str(input_audio), fp16=False)
-#     return result["text"]
-
-# # print(transcript_audio("combined.wav"))
+    print("\n--- Transcription finale dans: ", TRANSCRIPTS_PATH + TEST_MOVIE + ".txt")
