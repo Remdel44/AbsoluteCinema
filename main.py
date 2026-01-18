@@ -1,6 +1,8 @@
 import whisper, re, subprocess, os, time, torch, sys, pandas as pd
 import whisper_eval
 import imdb_genres
+import bert_genre_detection 
+
 from pathlib import Path   
 
 from whisper.utils import format_timestamp # Fonction de formatage des timestamps
@@ -328,7 +330,7 @@ def whisper_transcript(movie_name, audio_duration, audio_format):
         os.remove(output_splits_path + audio_split)
     os.rmdir(output_splits_path)
     os.remove(audio_path)
-    
+
     return dialogues
 
 
@@ -402,10 +404,9 @@ if __name__ == "__main__":
         print("2. Extraction des flux audio et transcription Whisper")
         print("3. Évaluation des performances de transcription de Whisper (WER) sur les transcriptions existantes")
         print("4. Extraction du dataset de films (avec genres) sur IMDb")
-        print("5. Entraînement des modèles de prédiction de genre") # SAVE MODELE LOCAL
-        print("6. Validation / Évaluation des modèles de prédiction de genre")
-        print("7. Prédiction de genres d'un film (inférence): ")
-        print("8. Sortie")
+        print("5. Entraînement / Validation  des modèles de prédiction de genre")
+        print("6. Prédiction de genres d'un film (inférence): ")
+        print("7. Sortie")
 
         print("\nChoisir le mode:")
         try: 
@@ -414,7 +415,7 @@ if __name__ == "__main__":
             print("Veuillez entrer un nombre.")
             exit(1)
     
-        if mode not in range(1, 9):
+        if mode not in range(1, 8):
             raise ValueError("Mode invalide.")
     
     if number_of_movies == 0:
@@ -455,19 +456,17 @@ if __name__ == "__main__":
             df = imdb_genres.create_movie_dataset(GT_SUBS_PATH, output_csv='movies_dataset.csv')
             pass
 
-        case 5: # Entraînement des modèles de prédiction de genre
-            # TODO
+        case 5: # Entraînement / validation des modèles de prédiction de genre
+            loss_acc_hist = bert_genre_detection.train(epochs=20, batch_size=4)
             pass
 
-        case 6: # Validation / Évaluation des modèles de prédiction de genre
-            # TODO
-            pass
 
-        case 7: # Prédiction de genres d'un film (inférence)
+        case 6: # Prédiction de genres d'un film (inférence)
+            weights = 'best_model.pt'
             # TODO
 
             # TODO choix Bert vs GPT
             pass
 
-        case 8: # Sortie
+        case 7: # Sortie
             exit(0)

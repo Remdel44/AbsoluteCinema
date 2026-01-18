@@ -1,3 +1,9 @@
 input_audios/*
-bert_genre_detection.py
 tests.py
+bert_genre_detection.py
+transcripted_subs/*comparison*.txt
+loss_acc_bert.png
+best_model.pt
+loss_acc_bert_2.png
+__pycache__/
+movie-corpus/*
