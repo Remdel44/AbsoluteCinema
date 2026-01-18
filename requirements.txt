@@ -2,3 +2,6 @@ numpy
 openai-whisper
 ffmpeg
 ffprobe
+jiwer
+transformers
+scikit-learn
