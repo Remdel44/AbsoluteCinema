@@ -125,12 +125,12 @@ def extract_eng_track(movie_path, audio_dir=AUDIOS_PATH):
     os.makedirs(audio_dir, exist_ok=True)
     
     print("-----------------------------------------------------------------")
-    # Sortie de fonction s'il existe déjà
-    for ext in AUDIO_FORMATS:
-        audio_out_path = os.path.join(audio_dir, f"{movie_name}.{ext}")
-        if os.path.isfile(audio_out_path):
-            print(f"Audio déjà extrait pour {movie_name} (format: {ext}).")
-            return audio_out_path.replace('\\', '/'), ext
+    # # Sortie de fonction s'il existe déjà
+    # for ext in AUDIO_FORMATS:
+    #     audio_out_path = os.path.join(audio_dir, f"{movie_name}.{ext}")
+    #     if os.path.isfile(audio_out_path):
+    #         print(f"Audio déjà extrait pour {movie_name} (format: {ext}).")
+    #         return audio_out_path.replace('\\', '/'), ext
    
 
 
@@ -323,10 +323,12 @@ def whisper_transcript(movie_name, audio_duration, audio_format):
     with open(dialogues_txt_path, 'w', encoding='utf-8') as f:
         f.write(dialogues)
 
-    # Fin de transcription -> Supprimer les dossiers temporaires
+    # Fin de transcription -> Supprimer les dossiers temporaires, et les audios
     for audio_split in os.listdir(output_splits_path):
         os.remove(output_splits_path + audio_split)
     os.rmdir(output_splits_path)
+    os.remove(audio_path)
+    
     return dialogues
 
 
